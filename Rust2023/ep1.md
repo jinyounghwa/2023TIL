@@ -20,3 +20,60 @@ const THREE_HOURS_IN_SECONDS: u32 = 60 * 60 * 3;
 ```
 
 rust 는 main.rs 형식의 확장자를 가지며 자바처럼 fn main() 함수로 실행한다.
+
+# 쉐도잉
+
+let 키워드를 남발 할 수 있다. (재선언 가능)
+
+```rust
+fn main() {
+    let x = 5; // < - 1
+
+    let x = x + 1; // < - 2
+
+    {
+        let x = x * 2; // < - 3
+        println!("The value of x in the inner scope is: {x}");
+    }
+
+    println!("The value of x is: {x}");
+}
+```
+
+# 변수의 타입을 보존한다.
+
+- 변수의 기본 타입이 특별한 게 많다.
+  https://www.codingame.com/playgrounds/365/getting-started-with-rust/primitive-data-types
+
+```java
+int i = 123;
+long l = 456L;
+
+float f = 0.5f;
+double d = 0.5;
+
+String string = "Hello";
+
+int[] arr = {1, 2, 3};
+
+List<Integer> list = Arrays.asList(1, 2, 3);
+```
+
+자바가 이런 느낌이라면
+
+```rust
+let i: i32 = 123;
+let l: i64 = 456;
+
+let f: f32 = 0.5;
+let d: f64 = 0.5f64;
+
+let string: &str = "Hello";
+
+let arr: [i32; 3] = [1, 2, 3];
+
+let list: Vec<i32> = vec![1, 2, 3];
+```
+
+러스트는 이런 느낌이다.왠지 타입스크립트 느낌도 나면서 조금 특별한것 같기도 하다.
+void 유형은 unit라고 하며 ()게 표시된다. (나중에 더 자세히 설명하겠다.)
