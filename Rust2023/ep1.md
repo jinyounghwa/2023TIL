@@ -78,3 +78,27 @@ let list: Vec<i32> = vec![1, 2, 3];
 러스트는 이런 느낌이다.  
 왠지 타입스크립트 느낌도 나면서 조금 특별한것 같기도 하다.  
 void 유형은 unit라고 하며 ()으로 표시된다. (나중에 더 자세히 설명하겠다.)
+
+# 불변성
+
+JS(const and let) , Kotlin (val and var) 과 비슷한 느낌이다. (완전히 같다는 게 아니다.)
+
+```TS
+let arr1: string[] = [];
+arr1.push("123"); // OK
+arr1 = ["a", "b"]; // OK
+
+const arr2: string[] = [];
+arr2.push("123"); // OK, even though arr2 is const
+arr2 = []; // error, arr2 is const
+```
+
+```rust
+let mut arr1 = vec![];
+arr1.push("123"); // OK
+arr1 = vec!["a", "b"]; // OK
+
+let arr2 = vec![];
+arr2.push("123"); // error, arr2 is not mutable
+arr2 = vec![]; // error, arr2 is not mutable
+```
