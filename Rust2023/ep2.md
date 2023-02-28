@@ -33,3 +33,83 @@ fn add(a: i32, b: i32) -> i32 {
 - Rust 함수에는 세미콜론이 없습니다. 특별하지 않다면 void를 반환합니다.
 
 - Rust에는 현재 명명된 인수나 기본 인수(Python 및 TypeScript와 같은)가 없으며 메서드 오버로드(C++, Java 또는 TypeScript와 같은)를 허용하지 않습니다.
+
+# 내장함수 (inner function)
+
+```js
+const RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+
+function isValidRange(start, end) {
+  function isValid(date) {
+    return date && date.match(RE);
+  }
+
+  return isValid(start) && isValid(end);
+}
+```
+
+```rust
+use regex::Regex;
+
+const RE: &str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+
+fn is_valid_range(start: &str, end: &str) -> bool {
+    fn is_valid(date: &str) -> bool {
+        !date.is_empty()
+            && Regex::new(RE)
+                .unwrap()
+                .is_match(date)
+    }
+
+    is_valid(start) && is_valid(end)
+}
+```
+
+- 자바스크립트와 달리 사용하는 선언과 타입을 명확하게 해야 한다.
+
+# Extension methods
+
+- 왠지 코틀린 스럽다. 이 부분은
+
+```kotlin
+typealias Range = Pair<String, String>
+
+fun Range.isValid(): Boolean {
+    val (start, end) = this
+    return start.isNotEmpty() && end.isNotEmpty()
+}
+
+object Main {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val range = Range("2020-01-01", "2020-12-31")
+        if (range.isValid()) {
+            println("Range is valid!")
+        }
+    }
+}
+```
+
+```rust
+type Range<'r> = (&'r str, &'r str);
+
+trait IsValid {
+    fn is_valid(&self) -> bool;
+}
+
+impl<'r> IsValid for Range<'r> {
+    fn is_valid(&self) -> bool {
+        let (start, end) = &self;
+        !start.is_empty() && !end.is_empty()
+    }
+}
+
+fn main() {
+    let range = ("2020-01-01", "2020-12-31");
+    if range.is_valid() {
+        println!("Range is valid!");
+    }
+}
+```
+
+- Rust에서는 특성을 구현하여 확장 메서드를 추가합니다. 메서드가 하나뿐인 경우 메서드(IsValid)와 같이 트레이트의 이름을 지정하는 것이 일반적입니다. 'r은 수명을 나타냅니다.
