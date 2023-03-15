@@ -176,4 +176,148 @@ fn get_log_level() -> u32 {
 }
 ```
 
-- Rust 코드는 일치를 사용하는데, 이는 표현식이고 더 많은 유연성을 제공한다는 점을 제외하면 Java 또는 JavaScript의 스위치와 같습니다. 다른 많은 언어가 아니라면 Rust는 지역 변수(이 예에서는 레벨)에 대한 변수 섀도잉을 허용합니다.
+- Rust 코드는 match를 사용하는데, 이는 표현식이고 더 많은 유연성을 제공한다는 점을 제외하면 Java 또는 JavaScript의 스위치와 같습니다. 다른 많은 언어가 아니라면 Rust는 지역 변수(이 예에서는 레벨)에 대한 변수 섀도잉을 허용합니다.
+
+# Structs (classes) 
+- Rust는 Java 또는 TypeScript와 같은 클래스를 완전히 지원하지 않지만 대신 구조체(C의 구조체와 유사)를 제공합니다. 이들은 메소드가 있는 데이터 컨테이너와 같지만 상속과 같은 모든 객체 지향 개념을 지원하지는 않습니다.  
+```java
+public class HttpClient {
+    private final ClientImpl clientImpl;
+
+    public HttpClient() {
+        clientImpl = new ClientImpl();
+    }
+
+    public String get(String url) {
+        return clientImpl.newRequest()
+            .get(url).asString();
+    }
+}
+
+public static void main(String[] args) {
+    HttpClient httpClient = new HttpClient();
+    System.out.println(httpClient
+        .get("https://example.com/"));
+}
+```
+```rust
+pub struct HttpClient {
+    client_impl: ClientImpl,
+}
+
+impl HttpClient {
+    pub fn new() -> HttpClient {
+        HttpClient {
+            client_impl: ClientImpl {},
+        }
+    }
+
+    pub fn get(&self, url: &str) -> String {
+        self.client_impl.new_request()
+            .get(url)
+            .as_string()
+    }
+}
+
+fn main() {
+    let http_client = HttpClient::new();
+    println!("{}",
+        http_client.get("https://example.com/"));
+}
+```
+- Java에서 변경 가능성은 필드 수준에서 제공되며 여기에서 clientImpl은 변경할 수 없습니다. Rust에서 가변성 수정자는 필드가 아닌 인스턴스 변수에 설정되므로 동일한 구조체에 가변 및 불변 필드를 가질 수 없습니다(내부 가변성 패턴 참조).  
+
+메서드는 Java 또는 JavaScript에서와 같이 이에 대한 암시적 액세스 권한이 없으므로 Python에서와 같이 self라는 명시적 인수를 전달해야 합니다. 이 매개 변수가 없는 메서드를 관련 함수라고 합니다(일부 언어에서는 정적 메서드라고 함).  
+
+Rust에는 생성자가 없으며 구조체는 JavaScript의 객체와 유사하게 생성됩니다. 생성자 논리가 필요한 경우 생성된 개체 인스턴스를 반환하는 new라는 관련 함수(정적 메서드)를 만드는 규칙이 있습니다.  
+# Traits (interfaces)
+- 다른 언어의 인터페이스와 가장 유사한 특성을 가집니다.(아래는 코틀린 예제)
+```kotlin
+interface Named {
+    fun name(): String
+}
+
+data class User(
+    val id: Int,
+    val name: String
+) : Named {
+    override fun name(): String {
+        return this.name
+    }
+}
+```
+```rust
+pub trait Named {
+    fn name(&self) -> &String;
+}
+
+pub struct User {
+    pub id: i32,
+    pub name: String,
+}
+
+impl Named for User {
+    fn name(&self) -> &String {
+        return &self.name;
+    }
+}
+```
+- Rust는 대부분 정적 언어이므로 런타임 중에 다른 언어가 수행하는 일부 작업은 가능한 경우 Rust가 컴파일 시간 동안 수행합니다. 인터페이스는 일반적으로 동적 디스패치에 사용됩니다.  
+
+# Associated functions 
+- Rust에서 특성은 관련 함수를 가질 수도 있습니다. 예를 들어 Rust Cookbook의 std::str::FromStr 섹션 문자열 구문 분석의 from_str(아래는 코틀린 예제)  
+
+```kotlin
+interface FromList<T> {
+    fun fromList(list: List<Int>): T?
+}
+
+data class MyPoint(val x: Int, val y: Int) {
+    companion object : FromList<MyPoint> {
+        override fun fromList(list: List<Int>):
+                MyPoint? {
+            return when (list.size) {
+                2 -> MyPoint(list[0], list[1])
+                else -> null
+            }
+        }
+    }
+}
+
+object Main {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val point = MyPoint.fromList(listOf(100, 200))
+        println(point)
+    }
+}
+```
+```rust
+trait FromList<T> {
+    fn from_list(list: &Vec<i32>) -> Option<T>;
+}
+
+struct MyPoint {
+    x: i32,
+    y: i32,
+}
+
+impl FromList<Self> for MyPoint {
+    fn from_list(list: &Vec<i32>) -> Option<Self> {
+        match list.len() {
+            2 => Some(MyPoint {
+                x: list[0],
+                y: list[1],
+            }),
+            _ => None,
+        }
+    }
+}
+
+fn main() {
+    let point =
+        MyPoint::from_list(&vec![100, 200]).unwrap();
+    println!("({}, {})", point.x, point.y);
+}
+```
+- 옵션 유형에 대한 자세한 내용은 아래의 Null 값 섹션을 참조하십시오. 키워드 Self(대문자)를 사용하여 현재 유형을 참조할 수 있습니다.  
