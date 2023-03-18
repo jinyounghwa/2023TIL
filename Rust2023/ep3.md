@@ -191,4 +191,88 @@ fn main() {
     t2.join().unwrap();
 }
 ```
-- std::vector 클래스는 스레드로부터 안전하지 않으며 C++ 프로그램은 오류 없이 컴파일되지만 실행할 때 해제되는 포인터가 할당되지 않았거나 유사한 오류와 함께 충돌할 수 있습니다. Rust에서 클로저 f는 목록(move 키워드로 표시됨)의 소유권을 가지므로 f가 두 번 이상 사용될 때 컴파일러에서 오류가 발생합니다.
+- std::vector 클래스는 스레드로부터 안전하지 않으며 C++ 프로그램은 오류 없이 컴파일되지만 실행할 때 해제되는 포인터가 할당되지 않았거나 유사한 오류와 함께 충돌할 수 있습니다. Rust에서 클로저 f는 목록(move 키워드로 표시됨)의 소유권을 가지므로 f가 두 번 이상 사용될 때 컴파일러에서 오류가 발생합니다.  
+
+# Strings
+- Rust에는 여러 문자열 유형이 있으며 가장 중요한 유형은 str(보통 &str 형식)과 문자열입니다.  
+
+- &str 유형은 빌린 콘텐츠만 참조하므로 정적 문자열과 문자열 조각을 참조할 때 사용되는 유형입니다. 다른 불변 참조와 마찬가지로 &str 값은 수정할 수 없습니다. 수정 가능한 문자열이 필요한 경우 문자열을 사용하십시오.  
+(아래는 자바스크립트 예시)
+```javascript
+const FILE_DATE = "2020-01-01";
+
+function printCopyright() {
+  const year = FILE_DATE.substr(0, 4);
+  const copyright = `(C) ${year}`;
+  console.log(copyright);
+}
+```
+```rust
+const FILE_DATE: &str = "2020-01-01";
+
+fn print_copyright() {
+    let year: &str = &FILE_DATE[..4];
+    let copyright: String = format!("(C) {}", year);
+    println!("{}", copyright);
+}
+```
+- String 유형은 동적으로 생성된 문자열에 사용되며 수정할 수 있고 길이가 컴파일 시간에 고정되지 않습니다.  
+- 일반적으로 &str은 함수 매개변수로 사용되고 String은 반환 값으로 사용됩니다.
+(아래는 자바의 예시)
+```java
+public static String repeat(String s, int count) {
+    StringBuilder result = new StringBuilder();
+    for (int i = 0; i < count; i++) {
+        result.append(s);
+    }
+    return result.toString();
+}
+```
+```rust
+fn repeat(s: &str, count: u32) -> String {
+    let mut result = String::new();
+    for _ in 0..count {
+        result += s;
+    }
+    result
+}
+```
+- 구조체 필드의 경우 일반적으로 문자열을 사용해야 합니다. 특히 더 오래 사는 개체를 처리할 때 해당 구조체가 값을 소유할 가능성이 높기 때문입니다.  
+
+- 문자열 상수의 경우 필드에 &'static str을 대신 사용할 수 있습니다.  
+```kotlin
+data class User(
+    private val source: String,
+    private val name: String,
+    private val address: String
+) {
+    companion object {
+        fun fromString(string: String): User {
+            val lines = string.lines()
+            return User("kotlin-v1.0", lines[0],
+                lines[1])
+        }
+    }
+}
+```
+```rust
+pub struct User {
+    source: &'static str,
+    name: String,
+    address: String,
+}
+
+impl User {
+    pub fn new(s: &str) -> User {
+        let mut lines = s.lines();
+        User {
+            source: "rust-v1.0",
+            name: lines.next().unwrap().to_owned(),
+            address: lines.next().unwrap().to_owned(),
+        }
+    }
+}
+```
+- 문자열 유형의 변수 s1을 &str로 변환하려면 &s1을 사용하십시오.  
+
+- &str 유형의 변수 s2를 문자열로 변환하려면 s2.to_owned()를 사용합니다(이는 새 메모리를 할당하고 문자열의 복사본을 생성함). 때때로 이 변환은 "문자열 리터럴".to_owned()와 같은 리터럴에도 필요합니다.  
