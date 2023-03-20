@@ -276,3 +276,206 @@ impl User {
 - 문자열 유형의 변수 s1을 &str로 변환하려면 &s1을 사용하십시오.  
 
 - &str 유형의 변수 s2를 문자열로 변환하려면 s2.to_owned()를 사용합니다(이는 새 메모리를 할당하고 문자열의 복사본을 생성함). 때때로 이 변환은 "문자열 리터럴".to_owned()와 같은 리터럴에도 필요합니다.  
+
+# Null values
+- Rust에는 특별한 null 값(일부 언어에서는 None 또는 nil이라고도 함)이 없습니다. 대신 Java의 Optional 유형과 매우 유사한 Option 열거형이 있습니다.  
+(아래는 자바 예시입니다.)
+```java
+public static Integer getYear(String date) {
+    if (date.length() >= 4) {
+        String s = date.substring(0, 4);
+        try {
+            return Integer.valueOf(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    } else {
+        return null;
+    }
+}
+
+public static void main(String[] args) {
+    Integer year = getYear("2020-01-01");
+    if (year != null) {
+        System.out.println(year);
+    }
+}
+```
+```rust
+fn get_year(date: &str) -> Option<u32> {
+    if date.len() >= 4 {
+        let s = date[..4];
+        match s.parse() {
+            Ok(year) => Some(year),
+            Err(_) => None
+        }
+    } else {
+        None
+    }
+}
+
+fn main() {
+    if let Some(year) = get_year("2020-01-01") {
+        println!("{}", year);
+    }
+}
+```
+- Option 유형은 Rust 표준 라이브러리의 일반 열거형으로, None과 Some이라는 두 개의 항목이 있습니다. Option을 반환할 때 비어 있는(null) 값은 None으로 반환될 수 있고 비어 있지 않은 값은 Some(year)와 같이 래핑해야 합니다.  
+
+- 실제 값을 가져올 필요 없이 단순히 값이 null인지 확인하려면 is_none()을 사용할 수 있습니다.  
+```java
+Integer year = getYear("");
+if (year == null) {
+    System.err.println("Invalid date given!");
+}
+```
+```rust
+let year: Option<u32> = get_year("");
+if year.is_none() {
+    println!("Invalid date given!");
+}
+```
+- 값이 null인 경우에만 일부 코드를 실행하여 변수가 null이 아닌 값을 갖도록 하는 것이 유용한 경우가 있습니다. Rust에서 이를 수행하는 많은 방법이 있지만 match를 사용하는 것이 가장 간결한 구문을 제공합니다.  
+```java
+String url = "https://github.com";
+
+String content = cache.get(url);
+if (content == null) {
+    content = loadUrl(url);
+}
+```
+```rust
+let url = "https://github.com";
+
+let content = match cache.get(url) {
+    Some(content) => content,
+    None => load_url(url),
+};
+```
+- Rust 코드에서 콘텐츠는 변경 불가능합니다(Java에서 동일한 작업을 수행하려면 다른 지역 변수나 새 메서드를 도입해야 함).  
+
+# Error handling 
+- Rust는 C++, Java 또는 JavaScript와 같은 예외를 제공하지 않습니다. 대신 오류 조건은 C 또는 Go와 같이 메서드의 일반 반환 값을 통해 표시됩니다.  
+(아래는 Go 의 예시)
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "strconv"
+)
+
+func ParsePort(port string) (uint16, error) {
+    p, err := strconv.ParseUint(port, 10, 16)
+    if err != nil {
+        return 0, err
+    }
+    if p == 0 {
+        return 0, fmt.Errorf("invalid: %d", p)
+    }
+    return uint16(p), nil
+}
+
+func main() {
+    port, err := ParsePort("123")
+    if err != nil {
+        log.Fatalf("failed to parse port: %v", err)
+    }
+    log.Printf("port: %d", port)
+}
+```
+```rust
+use std::error::Error;
+
+fn parse_port(s: &str) -> Result<u16, Box<Error>> {
+    let port: u16 = s.parse()?;
+    if port == 0 {
+        Err(Box::from(format!("invalid: {}", port)))
+    } else {
+        Ok(port)
+    }
+}
+
+fn main() {
+    match parse_port("123") {
+        Ok(port) => println!("port: {}", port),
+        Err(err) => panic!("{}", err),
+    }
+}
+```
+- Rust에서는 if/else 또는 match를 사용하여 가능한 모든 경우를 다루는 문을 갖는 것이 일반적이므로 Go보다 Rust에서 조기 반환을 만날 가능성이 적습니다.  
+
+- 이전 예제에서는 컴파일 시간 동안 반환된 오류 유형을 확인할 수 없기 때문에 Box<Error>를 사용해야 했습니다. , 또는 문자열(포트가 0인 경우).  
+
+- ? (선택자)라인 let port: u16 = s.parse()? 는 ? 연산자: parse가 오류를 반환하면 parse_port는 해당 오류를 반환하고, 그렇지 않으면 포장되지 않은 parse 결과가 포트에 할당됩니다.  
+
+# Input
+- Rust는 종종 터미널 응용 프로그램에 사용되므로 입력 읽기도 지원합니다. 관련 코드는 std::io 모듈에 있습니다.  
+(아래는 자바스크립트 예시)
+```javascript
+const { stdin } = require("process");
+
+function readStr() {
+  return new Promise((resolve, reject) => {
+    let result = "";
+
+    stdin.setEncoding("utf8");
+
+    stdin.on("readable", () => {
+      let chunk;
+      while ((chunk = stdin.read())) {
+        result += chunk;
+      }
+    });
+
+    stdin.once("error", err => reject(err));
+
+    stdin.once("end", () => resolve(result));
+  });
+}
+```
+```rust
+use std::io::{stdin, Read};
+
+fn read_str() -> Option<String> {
+    let mut buffer = String::new();
+    match stdin().read_to_string(&mut buffer) {
+        Ok(_) => Some(buffer),
+        Err(err) => {
+            eprintln!(
+                "Error while reading input: {}",
+                err
+            );
+            None
+        }
+    };
+}
+```
+- JavaScript 코드는 Promise를 반환하므로 비동기식인 반면 Rust 예제 코드는 동기식입니다.  
+# Attributes (annotations) 
+- Rust는 애튜리부트(다른 언어에서는 주석이라고도 함)도 지원합니다. 컴파일 시간 동안 해석되며 C 또는 C++의 전처리기 매크로와 비슷합니다.  
+(아래는 C++ 예시)
+
+```c++
+#include <cstdint>
+
+[[nodiscard]] int32_t add(int32_t a, int32_t b) {
+    return a + b;
+}
+
+int main() {
+    add(1, 2); // warning: unused return value
+}
+```
+```rust
+#[must_use]
+fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+fn main() {
+    add(1, 2); // warning: unused return value
+}
+```
+매우 일반적인 속성은 특성을 신속하게 구현하는 데 사용할 수 있는 파생입니다. Debug 및 PartialEq 특성을 구현하기 위해 #[derive(Debug, PartialEq)] 처럼 자주 사용됩니다.  
