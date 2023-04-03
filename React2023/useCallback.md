@@ -52,3 +52,101 @@ function ProductPage({ productId, referrer, theme }) {
   }, [productId, referrer]);
   // ...
 ```
+- useCallback에는 두 가지를 전달해야 합니다:
+
+1. 재 렌더링 간에 캐시할 함수 정의
+2. 함수 내에서 사용되는 컴포넌트 내 모든 값이 포함된 의존성 목록
+
+- 초기 렌더링에서 useCallback으로부터 반환된 함수는 전달한 함수가 될 것입니다.
+
+- 다음 렌더링에서 React는 이전 렌더링에서 전달한 의존성과 비교할 의존성을 비교합니다. 의존성이 변경되지 않았다면(Object.is를 사용해 비교), useCallback은 이전과 동일한 함수를 반환합니다. 그렇지 않으면, 이번 렌더링에서 전달한 함수를 반환할 것입니다.
+
+- 즉, useCallback은 의존성이 변경될 때까지 함수를 재 렌더링 간에 캐시합니다.
+- 어떤 경우에 유용한지 알아보기 위해 예시를 살펴보겠습니다.
+- ProductPage에서 ShippingForm 컴포넌트로 handleSubmit 함수를 전달하는 경우를 가정해봅시다.
+```js
+function ProductPage({ productId, referrer, theme }) {
+  // ...
+  return (
+    <div className={theme}>
+      <ShippingForm onSubmit={handleSubmit} />
+    </div>
+  );
+```
+- theme prop을 토글하는 경우 앱이 잠시 멈추는 것을 알아챘지만, JSX에서 `<ShippingForm />`을 제거하면 빠르게 동작한다는 것을 확인할 수 있습니다. 이는 ShippingForm 컴포넌트를 최적화해보는 가치가 있다는 것을 알려줍니다.
+
+- 기본적으로 컴포넌트가 재 렌더링되면, React는 자식 컴포넌트를 재귀적으로 모두 재 렌더링합니다. 따라서 ProductPage가 다른 테마로 재 렌더링될 때 ShippingForm 컴포넌트도 재 렌더링됩니다. 이는 재 렌더링에 많은 계산이 필요하지 않은 컴포넌트에 대해서는 괜찮습니다. 그러나 재 렌더링이 느리다고 확인된 경우, memo로 감싸서 마지막 렌더링과 동일한 props를 가지고 있는 경우 ShippingForm 컴포넌트를 재 렌더링하지 않도록 할 수 있습니다.
+
+```js
+import { memo } from 'react';
+
+const ShippingForm = memo(function ShippingForm({ onSubmit }) {
+  // ...
+});
+```
+- 이 변경으로 인해, ShippingForm 컴포넌트는 마지막 렌더링과 동일한 props를 가지고 있는 경우 재 렌더링을 건너뛰게 됩니다. 이때 함수 캐싱이 중요해집니다! handleSubmit을 useCallback 없이 정의한 경우를 가정해 봅시다.
+  
+```js
+function ProductPage({ productId, referrer, theme }) {
+  // Every time the theme changes, this will be a different function...
+  function handleSubmit(orderDetails) {
+    post('/product/' + productId + '/buy', {
+      referrer,
+      orderDetails,
+    });
+  }
+  
+  return (
+    <div className={theme}>
+      {/* ... so ShippingForm's props will never be the same, and it will re-render every time */}
+      <ShippingForm onSubmit={handleSubmit} />
+    </div>
+  );
+}
+```
+- 자바스크립트에서 함수 () {} 또는 () => {}은 항상 새로운 함수를 생성합니다. 이는 {} 객체 리터럴이 항상 새로운 객체를 생성하는 것과 유사합니다. 보통이라면 이것이 문제가 되지 않겠지만, 이것은 ShippingForm props가 결코 같지 않을 것이라는 것을 의미하며 memo 최적화가 작동하지 않을 것입니다. 이때 useCallback이 유용합니다:
+  
+```js
+function ProductPage({ productId, referrer, theme }) {
+  // Tell React to cache your function between re-renders...
+  const handleSubmit = useCallback((orderDetails) => {
+    post('/product/' + productId + '/buy', {
+      referrer,
+      orderDetails,
+    });
+  }, [productId, referrer]); // ...so as long as these dependencies don't change...
+
+  return (
+    <div className={theme}>
+      {/* ...ShippingForm will receive the same props and can skip re-rendering */}
+      <ShippingForm onSubmit={handleSubmit} />
+    </div>
+  );
+}
+```
+- handleSubmit을 useCallback으로 감싸면, 리렌더링 사이에 (의존성이 변경되기 전까지) 동일한 함수임이 보장됩니다. 특정한 이유가 없다면 함수를 useCallback으로 감싸지 않아도 됩니다. 이 예시에서의 이유는 memo로 감싸진 컴포넌트에 함수를 전달하기 때문에 이를 통해 리렌더링을 건너 뛸 수 있습니다. useCallback이 필요한 다른 이유는 이 페이지에서 더 자세하게 설명됩니다.
+
+- 메모이제이션된 콜백으로 이전 상태를 기반으로 상태를 업데이트해야 할 때가 있습니다. 이 handleAddTodo 함수는 다음 todos를 계산하기 때문에 todos를 종속성으로 지정합니다.
+
+```js
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+
+  const handleAddTodo = useCallback((text) => {
+    const newTodo = { id: nextId++, text };
+    setTodos([...todos, newTodo]);
+  }, [todos]);
+  // ...
+```
+- 보통 메모이제이션된 함수는 가능한 적은 종속성을 가지도록 하고 싶을 것입니다. 만약 다음 상태를 계산하기 위해서만 상태를 읽는다면, 업데이트 함수를 전달하여 해당 종속성을 제거할 수 있습니다.
+
+```js
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+
+  const handleAddTodo = useCallback((text) => {
+    const newTodo = { id: nextId++, text };
+    setTodos(todos => [...todos, newTodo]);
+  }, []); // ✅ No need for the todos dependency
+  // ...
+```
