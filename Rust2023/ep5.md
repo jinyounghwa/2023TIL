@@ -74,3 +74,113 @@ warning: unused `std::result::Result` which must be used
 ```rust
 println!("You guessed: {}", guess);
 ```
+- 이 라인은 사용자가 입력한 값을 저장한 문자열을 출력합니다. {}는 변경자로써 값이 표시되는 위치를 나타냅니다. {}를 이용하여 하나 이상의 값을 표시할 수도 있습니다. 첫번째 {}는 형식 문자열(format string) 이후의 첫번째 값을 표시하며, 두번째 {}는 두번째 값을 나타내며 이후에도 비슷하게 작동합니다. 다음 코드는 println!을 이용하여 여러 값을 표시하는 방법을 보여줍니다.
+
+```rust
+let x = 5;
+let y = 10;
+
+println!("x = {} and y = {}", x, y);
+```
+- 이 코드는 x = 5 and y = 10 을 출력합니다.
+
+## 첫번째 부분을 테스트 하기
+- 추리 게임의 처음 부분을 테스트 해봅시다. cargo run 을 통해 실행 할 수 있습니다.
+
+```
+$ cargo run
+   Compiling guessing_game v0.1.0 (file:///projects/guessing_game)
+    Finished dev [unoptimized + debuginfo] target(s) in 2.53 secs
+     Running `target/debug/guessing_game`
+Guess the number!
+Please input your guess.
+6
+You guessed: 6
+```
+  
+- 지금까지 게임의 첫번째 부분을 작성했습니다. 우리는 입력값을 받고 그 값을 출력했습니다.
+---
+## 비밀번호를 생성하기
+- 다음으로 사용자가 추리하기 위한 비밀번호를 생성해야 합니다. 게임을 다시 하더라도 재미있도록 비밀번호는 매번 달라야 합니다. 게임이 너무 어렵지 않도록 1에서 100 사이의 임의의 수를 사용합시다. 러스트는 아직 표준 라이브러리에 임의의 값을 생성하는 기능이 없습니다. 하지만 러스트 팀에서는 rand 크레이트를 제공합니다.
+
+### 크레이트(Crate)를 사용하여 더 많은 기능 가져오기
+- 크레이트는 러스트 코드의 묶음(package)임을 기억하세요. 우리가 만들고 있는 프로젝트는 실행이 가능한 binary crate 입니다. rand crate는 다른 프로그램에서 사용되기 위한 용도인 library crate 입니다.
+
+- Cargo에서 외부 크레이트의 활용이 정말 멋진 부분입니다. rand를 사용하는 코드를 작성하기 전에 Cargo.toml 을 수정하여 rand 크레이트를 의존 리스트에 추가해야 합니다. 파일을 열고 Cargo가 여러분을 위해 생성한 [dependencies] 절의 시작 바로 아래에 다음 내용을 추가하세요.
+
+- Filename: Cargo.toml
+
+```
+[dependencies]
+
+rand = "0.3.14"
+```
+- 여러분은 다른 버전명이나 라인의 순서가 다르게 보일 수 있습니다. 버전명이 다르더라도 SemVer 덕분에 현재 코드와 호환될 것입니다.
+
+- 이제 우리는 외부 의존성을 가지게 되었고, Cargo는 Crates.io 데이터의 복사본인 레지스트리(registry) 에서 모든 것들을 가져옵니다. Crates.io는 러스트의 생태계의 개발자들이 다른 사람들도 이용할 수 있도록 러스트 오픈소스를 공개하는 곳입니다.
+
+- 레지스트리를 업데이트하면 Cargo는 [dependencies] 절을 확인하고 아직 여러분이 가지고 있지 않은 것들을 다운 받습니다. 이 경우 우리는 rand만 의존한다고 명시했지만 rand는 libc에 의존하기 때문에 libc도 다운 받습니다. 러스트는 이것들을 다운받은 후 컴파일 하여 의존성이 해결된 프로젝트를 컴파일합니다.
+
+- 만약 아무것도 변경하지 않고 cargo build를 실행한다면 어떠한 결과도 얻지 못합니다. Cargo는 이미 의존 패키지들을 다운받고 컴파일했음을 알고 있고 여러분이 Cargo.toml 를 변경하지 않은 것을 알고 있습니다. 또한 Cargo는 코드가 변경되지 않은 것도 알고 있기에 코드도 다시 컴파일하지 않습니다. 아무것도 할 일이 없기에 그냥 종료될 뿐입니다. 만약 여러분이 src/main.rs 파일을 열어 사소한 변경을 하고 저장한 후 다시 빌드를 한다면 한 라인이 출력됨을 확인할 수 있습니다.
+
+```
+$ cargo build
+   Compiling guessing_game v0.1.0 (file:///projects/guessing_game)
+```
+- 이 라인은 Cargo가 src/main.rs 의 사소한 변경을 반영하여 빌드를 업데이트 했음을 보여줍니다. 의존 패키지가 변경되지 않았으므로 Cargo는 이미 다운받고 컴파일된 것들을 재사용할 수 있음을 알고 있습니다. 따라서 Cargo는 여러분의 코드에 해당하는 부분만을 다시 빌드합니다.
+
+## 재현 가능한 빌드를 보장하는 Cargo.lock
+- Cargo는 여러분뿐만이 아니라 다른 누구라도 여러분의 코드를 빌드할 경우 같은 산출물이 나오도록 보장하는 방법을 가지고 있습니다. Cargo는 여러분이 다른 의존성을 추가하지 전까지는 여러분이 명시한 의존 패키지만을 사용합니다. 예로 rand 크레이트의 다음 버전인 v0.3.15에서 중요한 결함이 고쳐졌지만 당신의 코드를 망치는 변경점(regression) 이 있다면 어떻게 될까요?
+
+- 이 문제의 해결책은 여러분이 처음 cargo build를 수행할 때 생성되어 이제 guessing_game 디렉토리 내에 존재하는 Cargo.lock 입니다. 여러분이 처음 프로젝트를 빌드할 때 Cargo는 기준을 만족하는 모든 의존 패키지의 버전을 확인하고 Cargo.lock 에 이를 기록합니다. 만약 여러분이 미래에 프로젝트를 빌드할 경우 Cargo는 모든 버전들을 다시 확인하지 않고 Cargo.lock 파일이 존재하는지 확인하여 그 안에 명시된 버전들을 사용합니다. 이는 여러분이 재현가능한 빌드를 자동으로 가능하게 합니다. 즉 여러분의 프로젝트는 Cargo.lock 덕분에 당신이 명시적으로 업그레이드하지 않는 이상 0.3.14를 이용합니다.
+
+## 크레이트를 새로운 버전으로 업그레이드하기
+- 만약 당신이 정말 크레이트를 업데이트하고 싶은 경우를 위해 Cargo는 update 명령어를 제공합니다. 이것은 Cargo.lock 파일을 무시하고 Cargo.toml 에 여러분이 명시한 요구사항에 맞는 최신 버전을 확인합니다. 만약 이 버전들로 문제가 없다면 Cargo는 해당 버전을 Cargo.lock 에 기록합니다.
+
+- 하지만 Cargo는 기본적으로 0.3.0보다 크고 0.4.0보다 작은 버전을 찾을 것입니다. 만약 rand 크레이트가 새로운 두 개의 버전인 0.3.15와 0.4.0을 릴리즈했다면 여러분이 cargo update를 실행했을 때 다음의 메세지를 볼 것입니다.
+
+```
+$ cargo update
+    Updating registry `https://github.com/rust-lang/crates.io-index`
+    Updating rand v0.3.14 -> v0.3.15
+```
+- 이 시점에 여러분은 Cargo.lock 파일에서 변경이 일어난 것과 앞으로 사용될 rand 크레이트의 버전이 0.3.15임을 확인할 수 있습니다.
+
+- 만약 여러분이 0.4.0이나 0.4.x에 해당하는 모든 버전을 받고 싶다면 Cargo.toml 을 다음과 같이 업데이트해야 합니다.
+```
+[dependencies]
+
+rand = "0.4.0"
+```
+- 다음번에 여러분이 cargo build를 실행하면 Cargo는 가용 가능한 크레이트들의 레지스트리를 업데이트할 것이고 여러분의 rand 요구사항을 새롭게 명시한 버전에 따라 재계산할 것입니다.
+
+- Cargo와 그의 생태계에 대해 더 많은 것들은 14장에서 다뤄지지만 지금 당장은 이 정도만 알면 됩니다. Cargo는 라이브러리의 재사용을 쉽게 하여 러스트 사용자들이 많은 패키지들과 결합된 더 작은 프로젝트들을 작성할 수 있도록 도와줍니다.
+
+## 임의의 숫자를 생성하기
+- 이제 rand를 사용 해 봅시다. 다음 단계는 src/main.rs 를 Listing 2-3처럼 업데이트하면 됩니다.
+
+- Filename: src/main.rs
+```rust
+extern crate rand;
+
+use std::io;
+use rand::Rng;
+
+fn main() {
+    println!("Guess the number!");
+
+    let secret_number = rand::thread_rng().gen_range(1.. 101);
+
+    println!("The secret number is: {}", secret_number);
+
+    println!("Please input your guess.");
+
+    let mut guess = String::new();
+
+    io::stdin().read_line(&mut guess)
+        .expect("Failed to read line");
+
+    println!("You guessed: {}", guess);
+}
+```
+
