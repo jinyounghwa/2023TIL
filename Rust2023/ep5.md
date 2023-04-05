@@ -42,4 +42,35 @@ io::stdin().read_line(&mut guess)
 ```rust
 io::stdin().read_line(&mut guess).expect("Failed to read line");
 ```
-하지만 하나의 긴 라인은 가독성이 떨어지므로 두 개의 메소드 호출을 위한 라인으로 나누는것이 좋습니다. 이제 이 라인이 무엇인지 대해 이야기 해봅시다.
+하지만 하나의 긴 라인은 가독성이 떨어지므로 두 개의 메소드 호출을 위한 라인으로 나누는것이 좋습니다. 이제 이 라인이 무엇인지 대해 이야기 해봅시다.  
+
+## Result 타입으로 잠재된 실패 다루기
+- 이전에 언급한 것처럼 `read_line`은 우리가 인자로 넘긴 문자열에 사용자가 입력을 저장할 뿐 아니라 하나의 값을 돌려 줍니다. 여기서 돌려준 값은 `io::Result`입니다. 러스트는 표둔 라이브러리에 여러 종류의 `Result`타입을 가지고 있습니다. 제네릭`Result`이나 `io::Result`가 그 예시입니다.  
+- Result 타입은 열거형(enumerations)로써 enums 라고 부르기도 합니다. 열거형은 정해진 값들만을 가질 수 있으며 이러한 값들은 열거형의 variants 라고 부릅니다. 6장에서 열거형에 대해 더 자세히 다룹니다.
+
+- Result의 variants는 Ok와 Err입니다. Ok는 처리가 성공했음을 나타내며 내부적으로 성공적으로 생성된 결과를 가지고 있습니다. Err는 처리가 실패했음을 나타내고 그 이유에 대한 정보를 가지고 있습니다.
+
+- 이러한 Result는 에러 처리를 위한 정보를 표현하기 위해 사용됩니다. Result 타입의 값들은 다른 타입들처럼 메소드들을 가지고 있습니다. `io::Result` 인스턴스는 expect 메소드를 가지고 있습니다. 만약 `io::Result` 인스턴스가 Err일 경우 expect 메소드는 프로그램이 작동을 멈추게 하고 expect에 인자로 넘겼던 메세지를 출력하도록 합니다. 만약 `read_line` 메소드가 Err를 돌려줬다면 그 에러는 운영체제로부터 생긴 에러일 경우가 많습니다. 만약 `io::Result`가 Ok 값이라면 expect는 Ok가 가지고 있는 결과값을 돌려주어 사용할 수 있도록 합니다. 이 경우 결과값은 사용자가 표준 입력으로 입력했던 바이트의 개수입니다.
+
+- 만약 expect를 호출하지 않는다면 컴파일은 되지만 경고가 나타납니다.  
+
+```
+$ cargo build
+   Compiling guessing_game v0.1.0 (file:///projects/guessing_game)
+warning: unused `std::result::Result` which must be used
+  --> src/main.rs:10:5
+   |
+10 |     io::stdin().read_line(&mut guess);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: #[warn(unused_must_use)] on by default
+```
+- 러스트는 read_line가 돌려주는 Result 값을 사용하지 않았음을 경고하며 일어날 수 있는 에러를 처리하지 않았음을 알려줍니다. 이 경고를 없애는 옳은 방법은 에러를 처리하는 코드를 작성하는 것이지만 만약 문제가 발생했을 때 프로그램이 멈추길 바란다면 expect를 사용할 수 있습니다. 9장에서 에러가 발생했을 때 이를 처리하는 방법에 대해 배웁니다.
+
+## println! 변경자(placeholder)를 이용한 값 출력
+
+- 지금까지 작성한 코드에서 닫는 중괄호 말고도 살펴봐야 하는 코드가 하나 더 있습니다. 내용은 아래와 같습니다.
+
+```rust
+println!("You guessed: {}", guess);
+```
