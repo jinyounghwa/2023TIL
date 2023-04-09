@@ -66,6 +66,7 @@ function handleClick() {
 
 ---
 ## 사용법 
+
 ### 컴포넌트에 상태 추가하기 
 - 컴포넌트의 최상위 레벨에서 useState를 호출하여 하나 이상의 상태 변수를 선언하세요.
 
@@ -103,3 +104,86 @@ function handleClick() {
 ```
 - 다음 렌더링부터 반환할 useState에만 영향을 줍니다.
 
+### 기본적인 useState 예시
+- 이 예제에서 카운트 상태 변수는 숫자를 보유합니다. 버튼을 클릭하면 숫자가 증가합니다.
+https://codesandbox.io/s/e52bbn?file=%2FApp.js&utm_medium=sandpack
+
+- 이 예제에서 텍스트 상태 변수는 문자열을 보유합니다. 입력하면 handleChange는 브라우저 입력 DOM 요소에서 최신 입력 값을 읽고 setText를 호출하여 상태를 업데이트합니다. 이렇게 하면 아래에 현재 텍스트를 표시할 수 있습니다.
+https://codesandbox.io/s/4t6pqy?file=/App.js&utm_medium=sandpack
+
+- 이 예제에서 좋아요 상태 변수는 부울을 보유합니다. 입력을 클릭하면 setLiked는 브라우저 확인란 입력이 선택되어 있는지 여부에 따라 좋아요 상태 변수를 업데이트합니다. 좋아요 변수는 체크박스 아래의 텍스트를 렌더링하는 데 사용됩니다.
+https://codesandbox.io/s/56ohpg?file=%2FApp.js&utm_medium=sandpack
+
+- 동일한 컴포넌트에 둘 이상의 상태 변수를 선언할 수 있습니다. 각 상태 변수는 완전히 독립적입니다.
+https://codesandbox.io/s/ppw3vj?file=/App.js&utm_medium=sandpack
+
+## 이전 state 기준으로 state 업데이트하기
+- 나이가 42세라고 가정합니다. 이 핸들러는 setAge(age + 1)를 세 번 호출합니다
+```js
+function handleClick() {
+  setAge(age + 1); // setAge(42 + 1)
+  setAge(age + 1); // setAge(42 + 1)
+  setAge(age + 1); // setAge(42 + 1)
+}
+```
+- 그러나 한 번만 클릭하면 나이는 45세가 아니라 43세가 됩니다! 이는 set 함수를 호출해도 이미 실행 중인 코드에서 나이 상태 변수가 업데이트되지 않기 때문입니다. 따라서 각 setAge(age + 1) 호출은 setAge(43)이 됩니다.
+
+- 이 문제를 해결하려면 다음 상태 대신 업데이터 함수를 setAge에 전달할 수 있습니다
+
+```js
+function handleClick() {
+  setAge(a => a + 1); // setAge(42 => 43)
+  setAge(a => a + 1); // setAge(43 => 44)
+  setAge(a => a + 1); // setAge(44 => 45)
+}
+```
+- 여기서 a => a + 1은 업데이터 함수입니다. 이 함수는 보류 중인 상태를 가져와서 다음 상태를 계산합니다.
+
+- React는 업데이터 함수를 대기열에 넣습니다. 그리고 다음 렌더링 중에 같은 순서로 호출합니다:
+
+1. a => a + 1은 42를 보류 상태로 받고 다음 상태로 43을 반환합니다.
+2. a => a + 1은 43을 보류 중인 상태로 수신하고 다음 상태로 44를 반환합니다.
+3. a => a + 1은 44를 보류 중인 상태로 수신하고 다음 상태로 45를 반환합니다.
+4. 대기 중인 다른 업데이트가 없으므로 React는 결국 45를 현재 상태로 저장합니다.
+
+- 일반적으로 보류 중인 상태 인수의 이름을 state 변수 이름의 첫 글자로 정하는 것이 일반적입니다(예: for age). 하지만 더 명확하다고 생각되는 prevAge 또는 다른 이름으로 부를 수도 있습니다.
+
+- React는 개발 과정에서 업데이트가 순수한지 확인하기 위해 업데이터를 두 번 호출할 수 있습니다.
+
+### 업데이터를 전달하는 것과 다음 상태를 직접 전달하는 것의 차이점
+- 업데이터 함수 전달하기 : 이 예제는 업데이터 함수를 전달하므로 "+3" 버튼이 작동합니다.
+https://codesandbox.io/s/tyz40q?file=%2FApp.js&utm_medium=sandpack
+
+- 다음 상태로 직접 전달하기 : 이 예제에서는 업데이터 함수를 전달하지 않으므로 "+3" 버튼이 의도한 대로 작동하지 않습니다.
+https://codesandbox.io/s/zsq3nl?file=%2FApp.js&utm_medium=sandpack
+
+## 상태의 개체 및 배열 업데이트하기 
+- 객체와 배열을 state에 넣을 수 있습니다. React에서 state는 읽기 전용으로 간주되므로 기존 객체를 변경하지 말고 대체해야 합니다. 예를 들어, state에 폼 객체가 있는 경우 이를 변경하지 마세요:
+```js
+// 🚩 Don't mutate an object in state like this:
+form.firstName = 'Taylor';
+```
+- 대신 새 개체를 생성하여 전체 개체를 교체합니다:
+```js
+// ✅ Replace state with a new object
+setForm({
+  ...form,
+  firstName: 'Taylor'
+});
+```
+### state의 객체 및 배열 예시
+1. 폼(객체) : Form (object) 
+- 이 예제에서 양식 상태 변수는 객체를 보유합니다. 각 입력에는 전체 양식의 다음 상태로 setForm을 호출하는 변경 핸들러가 있습니다. 스프레드 구문 { ...form }은 상태 객체가 변경되지 않고 대체되도록 합니다.
+https://codesandbox.io/s/1cp3sh?file=/App.js&utm_medium=sandpack
+
+2. 양식(중첩된 개체) : Form (nested object) 
+- 이 예제에서는 상태가 더 중첩되어 있습니다. 중첩된 상태를 업데이트할 때는 업데이트하려는 개체의 복사본을 만들어야 하며, 그 위에 있는 개체를 "포함하는" 모든 개체도 복사본을 만들어야 합니다. 자세히 알아보려면 중첩된 개체 업데이트하기를 참조하세요.
+https://codesandbox.io/s/geo3mo?file=%2FApp.js&utm_medium=sandpack
+
+3. 목록(배열) : List (array) 
+- 이 예제에서 할일 상태 변수는 배열을 보유합니다. 각 버튼 핸들러는 해당 배열의 다음 버전으로 setTodos를 호출합니다. `[...todos]`스프레드 구문인 todos.map() 및 todos.filter()는 상태 배열이 변경되지 않고 대체되도록 합니다.
+https://codesandbox.io/s/shp8w8?file=/App.js&utm_medium=sandpack
+
+4. Immer로 간결한 업데이트 로직 작성 : Writing concise update logic with Immer 
+- 변경 없이 배열과 객체를 업데이트하는 것이 지루하게 느껴진다면 Immer와 같은 라이브러리를 사용해 반복적인 코드를 줄일 수 있습니다. Immer를 사용하면 객체를 변경하는 것처럼 간결한 코드를 작성할 수 있지만, 내부적으로는 변경 불가능한 업데이트를 수행합니다:
+https://codesandbox.io/s/mclx2n?file=%2FApp.js&utm_medium=sandpack
