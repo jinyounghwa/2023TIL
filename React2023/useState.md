@@ -187,3 +187,4 @@ https://codesandbox.io/s/shp8w8?file=/App.js&utm_medium=sandpack
 4. Immer로 간결한 업데이트 로직 작성 : Writing concise update logic with Immer 
 - 변경 없이 배열과 객체를 업데이트하는 것이 지루하게 느껴진다면 Immer와 같은 라이브러리를 사용해 반복적인 코드를 줄일 수 있습니다. Immer를 사용하면 객체를 변경하는 것처럼 간결한 코드를 작성할 수 있지만, 내부적으로는 변경 불가능한 업데이트를 수행합니다:
 https://codesandbox.io/s/mclx2n?file=%2FApp.js&utm_medium=sandpack
+
