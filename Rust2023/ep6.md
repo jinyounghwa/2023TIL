@@ -89,7 +89,6 @@ fn main() {
 
         io::stdin().read_line(&mut guess)
             .expect("Failed to read line");
-
         let guess: u32 = guess.trim().parse()
             .expect("Please type a number!");
 
@@ -105,4 +104,44 @@ fn main() {
         }
     }
 }
+```
+- break문을 You win! 이후에 추가하여 사용자가 비밀번호를 맞췄을 때 프로그램이 반복문을 끝내도록 합니다. 반복문이 main의 마지막 부분이므로 반복문의 종료는 프로그램의 종료를 의미합니다.
+
+## 잘못된 입력값 처리하기
+- 사용자가 숫자가 아닌 값을 입력했을 때 프로그램이 종료되는 동작을 더 다듬어 숫자가 아닌 입력은 무시하여 사용자가 계속 입력할 수 있도록 해 봅시다. guess가 String에서 u32로 변환되는 라인을 수정하면 됩니다.
+
+```rust
+let guess: u32 = match guess.trim().parse() {
+    Ok(num) => num,
+    Err(_) => continue,
+};
+```
+- expect 메소드 호출을 match 표현식으로 바꾸는 것은 에러 발생 시 종료에서 처리 로 바꾸는 일반적인 방법입니다. parse 메소드가 Result 타입을 돌려주는 것과 Result는 Ok나 Err variants를 가진 열거형임을 떠올리세요. cmp 메소드의 Ordering 결과를 처리했을 때처럼 여기서 match 표현식을 사용하고 있습니다.
+
+- 만약 parse가 성공적으로 문자열에서 정수로 변환했다면 결과값을 가진 Ok 를 돌려줍니다. Ok는 첫번째 arm의 패턴과 매칭하게 되고 match 표현식은 parse 가 생성한 num값을 돌려줍니다. 그 값은 우리가 생성하고 있던 새로운 guess 과 묶이게 됩니다.
+
+- 만약 parse가 문자열을 정수로 바꾸지 못했다면 에러 정보를 가진 Err를 돌려줍니다. Err는 첫번째 arm의 패턴인 Ok(num)과 매칭하지 않지만 두 번째 arm의 Err(_) 와 매칭합니다. _은 모든 값과 매칭될 수 있습니다. 이 예시에서는 Err내에 무슨 값이 있던지에 관계없이 모든 Err를 매칭하도록 했습니다. 따라서 프로그램은 두 번째 arm의 코드인 continue를 실행하며, 이는 loop의 다음 반복으로 가서 또 다른 추리값을 요청하도록 합니다. 효율적으로 프로그램은 parse에서 가능한 모든 에러를 무시합니다.
+
+- 이제 우리가 원하는대로 프로그램이 작동해야 합니다. cargo run을 실행해 봅시다.
+
+```
+$ cargo run
+   Compiling guessing_game v0.1.0 (file:///projects/guessing_game)
+     Running `target/guessing_game`
+Guess the number!
+The secret number is: 61
+Please input your guess.
+10
+You guessed: 10
+Too small!
+Please input your guess.
+99
+You guessed: 99
+Too big!
+Please input your guess.
+foo
+Please input your guess.
+61
+You guessed: 61
+You win!
 ```
